@@ -1,0 +1,6 @@
+.DS_Store
+*.swp
+node_modules/
+
+# Preview screenshots from verification (not part of the deck)
+slide_*.png

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why we launched before we were ready — Shu @ Omakase Robotics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --black: #000000;
+  --white: #FFFFFF;
+  --gray-300: #D4D4D4;
+  --gray-400: #A3A3A3;
+  --gray-500: #737373;
+  --gray-600: #525252;
+  --gray-700: #404040;
+  --gray-800: #262626;
+  --gray-900: #171717;
+  --accent: #FFFFFF;
+}
+body {
+  font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--black);
+  color: var(--white);
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.slide {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6vh 8vw;
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  pointer-events: none;
+}
+.slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: var(--white); transition: width 0.4s ease; z-index: 100; }
+.slide-counter { position: fixed; bottom: 3vh; right: 4vw; font-size: 14px; color: var(--gray-500); z-index: 100; }
+.nav-hint { position: fixed; bottom: 3vh; left: 4vw; font-size: 12px; color: var(--gray-600); z-index: 100; }
+
+h1 { font-size: clamp(3rem, 6.2vw, 5.6rem); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 1.5rem; }
+h2 { font-size: clamp(2.4rem, 5vw, 4.4rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 1.2rem; }
+h3 { font-size: clamp(1.4rem, 2.4vw, 2.1rem); font-weight: 600; line-height: 1.3; margin-bottom: 1rem; }
+p, li { font-size: clamp(1.35rem, 2.25vw, 2rem); font-weight: 400; line-height: 1.65; color: var(--gray-300); }
+.label { font-size: clamp(0.9rem, 1.2vw, 1.1rem); font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--gray-500); margin-bottom: 1rem; }
+.highlight { color: var(--white); font-weight: 600; }
+.divider { width: 60px; height: 2px; background: var(--gray-600); margin: 1.5rem 0; }
+
+ul { list-style: none; padding: 0; }
+ul li { padding: 0.4em 0; padding-left: 1.5em; position: relative; }
+ul li::before { content: ''; position: absolute; left: 0; top: 0.85em; width: 6px; height: 6px; background: var(--gray-500); border-radius: 50%; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 5vw; align-items: start; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+.logo { display: flex; align-items: center; gap: 12px; margin-bottom: 0.5rem; }
+.logo svg { width: 40px; height: 40px; }
+.logo-text { font-size: 1.1rem; font-weight: 700; }
+
+.cta-box { display: inline-block; border: 2px solid var(--white); padding: 1rem 2.5rem; font-size: 1.1rem; font-weight: 600; margin-top: 2rem; }
+.profile-links a { color: var(--gray-400); text-decoration: none; font-size: 0.95rem; transition: color 0.2s; }
+.profile-links a:hover { color: var(--white); }
+
+.insight-box { border-left: 3px solid var(--white); padding-left: 1.5rem; margin-top: 1.5rem; }
+.insight-box p { color: var(--white); font-weight: 500; font-size: clamp(1.1rem, 1.8vw, 1.4rem); }
+.insight-box .jp { font-family: 'Noto Sans JP', sans-serif; font-weight: 700; }
+
+.pain-point { background: var(--gray-900); border: 1px solid var(--gray-700); border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 0.8rem; }
+.pain-point h4 { font-size: 1rem; font-weight: 600; color: var(--white); margin-bottom: 0.3rem; }
+.pain-point p { font-size: 0.9rem; color: var(--gray-400); line-height: 1.5; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2vw; margin-top: 1.5rem; }
+.stat-item .big-number { font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; line-height: 1; letter-spacing: -0.04em; color: var(--white); margin-bottom: 0.2rem; }
+
+.reveal-item { opacity: 0; transform: translateY(12px); transition: opacity 0.4s ease, transform 0.4s ease; }
+.reveal-item.visible { opacity: 1; transform: translateY(0); }
+
+.pipeline { display: flex; align-items: center; gap: 0; margin: 2rem 0; flex-wrap: wrap; }
+.pipeline-step { background: var(--gray-900); border: 1px solid var(--gray-700); border-radius: 10px; padding: 1.6rem 1.8rem; flex: 1; min-width: 200px; }
+.pipeline-step h4 { font-size: clamp(1.15rem, 1.7vw, 1.5rem); font-weight: 700; color: var(--white); margin-bottom: 0.5rem; font-family: 'JetBrains Mono', monospace; }
+.pipeline-step p { font-size: clamp(1rem, 1.45vw, 1.25rem); color: var(--gray-400); line-height: 1.55; }
+.pipeline-arrow { font-size: 2rem; color: var(--gray-500); padding: 0 1rem; flex-shrink: 0; }
+
+video { width: 100%; max-height: 45vh; border-radius: 8px; border: 1px solid var(--gray-700); background: var(--gray-900); }
+
+.img-placeholder {
+  background: var(--gray-900);
+  border: 1px dashed var(--gray-600);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-500);
+  font-size: 0.9rem;
+  min-height: 120px;
+  padding: 1rem;
+  text-align: center;
+}
+.img-slot { border-radius: 8px; border: 1px solid var(--gray-700); max-height: 40vh; object-fit: contain; }
+
+.profile-img { width: 320px; height: 320px; border-radius: 50%; border: 3px solid var(--gray-700); object-fit: cover; background: var(--gray-800); }
+.qr-img { width: 220px; height: 220px; border-radius: 8px; background: white; padding: 6px; }
+
+.slide-closing { justify-content: center; align-items: center; text-align: center; }
+.slide-closing .divider { margin-left: auto; margin-right: auto; }
+
+/* Browser-window mock for the launch slide */
+.browser-mock {
+  background: var(--gray-900);
+  border: 1px solid var(--gray-700);
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 540px;
+}
+.browser-mock .bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  background: var(--gray-800);
+  border-bottom: 1px solid var(--gray-700);
+}
+.browser-mock .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gray-600); }
+.browser-mock .url {
+  margin-left: 12px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--gray-400);
+}
+.browser-mock .body {
+  padding: 2rem 1.5rem;
+  min-height: 220px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gray-500); font-size: 0.85rem; text-align: center;
+}
+
+/* Media logos / chips */
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.media-chip {
+  background: var(--gray-900);
+  border: 1px solid var(--gray-700);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+  letter-spacing: 0.03em;
+  color: var(--gray-300);
+  min-height: 64px;
+}
+.media-chip.bold { color: var(--white); border-color: var(--gray-500); }
+.media-chip small { display: block; font-weight: 400; font-size: 0.7rem; color: var(--gray-500); margin-top: 0.2rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.vertical-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
+  margin-top: 1.2rem;
+}
+.vertical-chip {
+  background: var(--gray-900);
+  border: 1px solid var(--gray-700);
+  border-radius: 10px;
+  padding: 1.4rem 1rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--white);
+  font-size: clamp(1.2rem, 1.7vw, 1.5rem);
+}
+
+.media-cats {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin-top: 0.5rem;
+}
+.media-cat {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  align-items: baseline;
+  gap: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--gray-800);
+}
+.media-cat:last-child { border-bottom: none; }
+.cat-label {
+  font-size: clamp(1rem, 1.4vw, 1.25rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+}
+.cat-list {
+  font-size: clamp(1.25rem, 1.85vw, 1.7rem);
+  font-weight: 600;
+  color: var(--white);
+  line-height: 1.5;
+}
+
+/* Reid quote */
+.quote-block {
+  max-width: 880px;
+  margin: 1.5rem auto 0;
+  padding: 1.8rem 2.4rem;
+  border-left: 3px solid var(--white);
+  text-align: left;
+}
+.quote-block .quote {
+  font-size: clamp(1.4rem, 2.3vw, 2rem);
+  font-weight: 500;
+  color: var(--white);
+  line-height: 1.45;
+  font-style: italic;
+}
+.quote-attr {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+.quote-face {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--gray-800);
+  border: 1px solid var(--gray-700);
+}
+.quote-attr-name { font-size: 1.25rem; font-weight: 700; color: var(--white); line-height: 1.2; }
+.quote-attr-sub { font-size: 1.05rem; color: var(--gray-500); }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+<div class="slide-counter" id="counter"></div>
+<div class="nav-hint">← → / Enter</div>
+
+<!-- ==================== SLIDE 1: Cover ==================== -->
+<div class="slide active" id="slide-0">
+  <div class="logo">
+    <svg viewBox="0 0 100 100" fill="none">
+      <circle cx="50" cy="50" r="45" stroke="white" stroke-width="8"/>
+      <circle cx="50" cy="50" r="18" fill="white"/>
+    </svg>
+    <span class="logo-text" style="font-size: 1.4rem;">Omakase Robotics</span>
+  </div>
+  <div style="margin-top: 4vh">
+    <h1>Ship first.<br>The right PoC partner<br>will find you.</h1>
+    <div class="divider"></div>
+    <p style="color: var(--gray-600); font-size: clamp(1rem, 1.3vw, 1.2rem); margin-top: 2rem;">
+      Robotics &amp; Physical AI x Industry &mdash; Tokyo AI &mdash; 2026/04/27
+    </p>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 2: Profile ==================== -->
+<div class="slide" id="slide-1">
+  <div class="label">Who am I?</div>
+  <div style="display: flex; gap: 5vw; align-items: center; flex: 1;">
+    <div style="flex: 1;">
+      <h2 style="font-size: clamp(3rem, 5vw, 4.4rem); margin-bottom: 0.4rem;">Shu</h2>
+      <h3 style="color: var(--gray-400); font-weight: 400; font-size: clamp(1.5rem, 2.4vw, 2.1rem);">CTO @ Omakase Robotics</h3>
+      <div class="divider"></div>
+      <ul style="font-size: clamp(1.25rem, 1.95vw, 1.7rem); line-height: 1.55;">
+        <li>Now building <span class="highlight">Omakase OS</span> at <span class="highlight">Omakase Robotics</span></li>
+        <li>Former founder &mdash; <span class="highlight">Singapore / Vietnam</span></li>
+        <li>Machine Learning at <span class="highlight">The University of Tokyo</span></li>
+      </ul>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 1.4rem;">
+      <img src="profile.png" alt="Shu" class="profile-img"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div class="img-placeholder" style="width:320px; height:320px; border-radius:50%; display:none;">Profile photo</div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+        <img src="qr_x.png" alt="X QR" class="qr-img"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="img-placeholder" style="width:220px; height:220px; display:none; font-size:0.8rem;">QR &mdash; @ngo275</div>
+        <div style="text-align: center; line-height: 1.3;">
+          <div style="font-size: 1.05rem; font-weight: 700; color: var(--white); letter-spacing: 0.05em;">Follow me on X</div>
+          <div style="font-size: 0.95rem; color: var(--gray-500);">@ngo275</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 3: Thesis ==================== -->
+<div class="slide" id="slide-2">
+  <div class="label">Default vs Our Bet</div>
+  <h2>We don't build quietly.<br>And we don't sell PoCs.</h2>
+  <div class="divider"></div>
+  <div class="two-col">
+    <div class="reveal-item" data-step="1">
+      <h3 style="color: var(--gray-400);">The default in Japan</h3>
+      <p>
+        Build quietly to avoid failure.<br>
+        Sell PoCs as revenue. <span class="highlight">That's consulting in disguise.</span><br>
+        Slow iteration. Never becomes a product.
+      </p>
+    </div>
+    <div class="reveal-item" data-step="2">
+      <h3>Our bet</h3>
+      <p>
+        Benchmark <span class="highlight">US &amp; Chinese</span> teams &mdash; ship rough, iterate in public.<br>
+        Sell <span class="highlight">product</span>, not PoCs.<br>
+        PoC = where the product gets battle-tested.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 4: Jan 2026 Launch ==================== -->
+<div class="slide" id="slide-3">
+  <div class="label">Act 1 &mdash; January 2026</div>
+  <h2>We launched something rough.<br>On purpose.</h2>
+  <div class="divider"></div>
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <p class="reveal-item" data-step="1" style="margin-bottom: 1.5rem;">
+        <span class="highlight">omakase.ai/robotics</span> &mdash; the public face of Omakase OS.<br>
+        Tiny scope. <span class="highlight">We shipped anyway.</span>
+      </p>
+      <p class="reveal-item" data-step="2" style="color: var(--white); font-weight: 500;">
+        Then something we didn't plan for happened.
+      </p>
+    </div>
+    <div class="reveal-item" data-step="1">
+      <div class="browser-mock">
+        <div class="bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="url">omakase.ai/robotics</span>
+        </div>
+        <div class="body">
+          <img src="omarobo.png" alt="Omakase OS Jan 2026 release" style="max-width: 100%; max-height: 360px; object-fit: contain;"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <div style="display: none;">[ rough Jan 2026 landing page screenshot ]</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 5: What the launch bought us ==================== -->
+<div class="slide" id="slide-4">
+  <div class="label">Act 2 &mdash; The unexpected door</div>
+  <h2>A public release beats<br>a perfect deck.</h2>
+  <div class="divider"></div>
+  <p style="margin-bottom: 0.5rem;">Within weeks of launching, two doors opened we couldn't have pitched our way into:</p>
+  <div class="pipeline">
+    <div class="pipeline-step reveal-item" data-step="1">
+      <h4>1. Public launch</h4>
+      <p>omakase.ai/robotics<br>Jan 2026 &mdash; rough, public, real.</p>
+    </div>
+    <div class="pipeline-arrow reveal-item" data-step="1">→</div>
+    <div class="pipeline-step reveal-item" data-step="2">
+      <h4>2. Unitree</h4>
+      <p>First Unitree<br><span class="highlight">technical partnership in Japan.</span></p>
+    </div>
+    <div class="pipeline-arrow reveal-item" data-step="2">→</div>
+    <div class="pipeline-step reveal-item" data-step="3">
+      <h4>3. Tsukuba</h4>
+      <p>University Hospital<br><span class="highlight">PoC opportunity.</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 6: PoC = battle-test ==================== -->
+<div class="slide" id="slide-5">
+  <div class="label">Act 3 &mdash; Tsukuba University Hospital</div>
+  <h2>Our product, tested in Japan's<br>hardest QA lab.</h2>
+  <div class="divider"></div>
+  <div class="two-col" style="align-items: start;">
+    <div>
+      <p class="reveal-item" data-step="1">
+        Hospitals in Japan are unforgiving:<br>
+        <span class="highlight">regulation, elderly patients, infection control,</span><br>
+        zero room for error.
+      </p>
+      <p class="reveal-item" data-step="2" style="margin-top: 1.2rem;">
+        Exactly why we picked it. <span class="highlight">If our product survives here, it survives anywhere.</span>
+      </p>
+    </div>
+    <div class="reveal-item" data-step="1">
+      <video controls preload="metadata" playsinline muted style="width: 100%; max-height: 64vh; border-radius: 10px; border: 1px solid var(--gray-700);"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <source src="video_tsukuba.mp4" type="video/mp4">
+      </video>
+      <div class="img-placeholder" style="display:none; min-height: 480px;">[ Tsukuba PoC video ]</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 7: Make it visible ==================== -->
+<div class="slide" id="slide-6">
+  <div class="label">Act 4 &mdash; Make it visible</div>
+  <h2>Doing the PoC isn't enough.<br>We made sure people saw it.</h2>
+  <div class="divider"></div>
+  <p class="reveal-item" data-step="1" style="margin-bottom: 1.5rem;">
+    Most JP startups skip this step. We pushed the story to media on <span class="highlight">day one.</span>
+  </p>
+  <div class="media-cats reveal-item" data-step="2">
+    <div class="media-cat">
+      <div class="cat-label">TV</div>
+      <div class="cat-list">TBS &middot; 日テレ &middot; NHK &middot; テレ東 (WBS) &middot; テレQ</div>
+    </div>
+    <div class="media-cat">
+      <div class="cat-label">Newspapers</div>
+      <div class="cat-list">日経新聞 &middot; 読売新聞 &middot; 朝日新聞</div>
+    </div>
+    <div class="media-cat">
+      <div class="cat-label">Magazines</div>
+      <div class="cat-list">日経ビジネス &middot; 東洋経済</div>
+    </div>
+    <div class="media-cat">
+      <div class="cat-label">Web</div>
+      <div class="cat-list">Monoist &middot; ドローンジャーナル</div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 8: The result + takeaway ==================== -->
+<div class="slide" id="slide-7">
+  <div class="label">The result</div>
+  <h2>Real demand finds you.</h2>
+  <div class="divider"></div>
+  <p class="reveal-item" data-step="1" style="margin-bottom: 0.5rem;">
+    Inbound now arriving from real businesses with real problems:
+  </p>
+  <div class="vertical-grid reveal-item" data-step="1">
+    <div class="vertical-chip">Hospitals</div>
+    <div class="vertical-chip">Airports</div>
+    <div class="vertical-chip">Train companies</div>
+    <div class="vertical-chip">+ more verticals</div>
+  </div>
+  <div class="reveal-item" data-step="2">
+    <div class="insight-box" style="margin-top: 2rem;">
+      <p style="font-size: clamp(1.6rem, 2.6vw, 2.2rem);">
+        The best PoC partner isn't a friend.<br>
+        It's a <span class="highlight">real business with real demand.</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 9: Close + CTA ==================== -->
+<div class="slide slide-closing" id="slide-8">
+  <div style="display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem; justify-content: center;">
+    <div class="logo" style="margin-bottom: 0;">
+      <svg viewBox="0 0 100 100" fill="none">
+        <circle cx="50" cy="50" r="45" stroke="white" stroke-width="8"/>
+        <circle cx="50" cy="50" r="18" fill="white"/>
+      </svg>
+      <span class="logo-text" style="font-size: 1.4rem;">Omakase Robotics</span>
+    </div>
+  </div>
+
+  <h1 style="font-size: clamp(2.4rem, 4.6vw, 4rem);">Let's build robotics globally, together.</h1>
+  <div class="divider"></div>
+
+  <div class="reveal-item" data-step="1">
+    <p style="max-width: 880px;">
+      Hiring engineers in <span class="highlight">SF &middot; Tokyo</span><br>
+      who want to ship robotics in the real world.
+    </p>
+  </div>
+  <div class="reveal-item" data-step="2">
+    <div class="quote-block" style="text-align: left;">
+      <p class="quote">&ldquo;If you are not embarrassed by the first version of your product, you've launched too late.&rdquo;</p>
+      <div class="quote-attr">
+        <img src="reid.webp" alt="Reid Hoffman" class="quote-face"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="img-placeholder" style="display:none; width:56px; height:56px; border-radius:50%; min-height:auto; padding:0; font-size:0.65rem;">RH</div>
+        <div>
+          <div class="quote-attr-name">Reid Hoffman</div>
+          <div class="quote-attr-sub">Co-founder, LinkedIn</div>
+        </div>
+      </div>
+    </div>
+    <div class="profile-links" style="margin-top: 2.5rem; display: flex; gap: 2.5rem; justify-content: center;">
+      <a href="https://x.com/ngo275" target="_blank" style="font-size: 1.4rem;">X @ngo275</a>
+      <a href="https://www.omakase.ai/robotics" target="_blank" style="font-size: 1.4rem;">omakase.ai/robotics</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total = slides.length;
+let current = 0;
+
+function getMaxStep(slideEl) {
+  let max = 0;
+  slideEl.querySelectorAll('.reveal-item').forEach(el => {
+    const s = parseInt(el.dataset.step);
+    if (s > max) max = s;
+  });
+  return max;
+}
+
+const revealState = {};
+slides.forEach((s, i) => { revealState[i] = 0; });
+
+function revealStep(slideIndex, step) {
+  const items = slides[slideIndex].querySelectorAll('.reveal-item');
+  items.forEach(el => {
+    if (parseInt(el.dataset.step) <= step) {
+      el.classList.add('visible');
+    }
+  });
+}
+
+function goForward() {
+  const maxStep = getMaxStep(slides[current]);
+  if (revealState[current] < maxStep) {
+    revealState[current]++;
+    revealStep(current, revealState[current]);
+    updateProgress();
+  } else if (current < total - 1) {
+    navigateToSlide(current + 1, 1);
+  }
+}
+
+function goBack() {
+  if (revealState[current] > 0) {
+    const items = slides[current].querySelectorAll('.reveal-item');
+    items.forEach(el => {
+      if (parseInt(el.dataset.step) > revealState[current] - 1) {
+        el.classList.remove('visible');
+      }
+    });
+    revealState[current]--;
+    updateProgress();
+  } else if (current > 0) {
+    navigateToSlide(current - 1, -1);
+  }
+}
+
+function navigateToSlide(next, direction) {
+  if (next < 0 || next >= total || next === current) return;
+  const curr = slides[current];
+  const nxt = slides[next];
+
+  curr.classList.remove('active');
+  curr.style.transform = direction > 0 ? 'translateX(-40px)' : 'translateX(40px)';
+  curr.style.opacity = '0';
+
+  if (direction > 0) {
+    nxt.querySelectorAll('.reveal-item').forEach(el => el.classList.remove('visible'));
+    revealState[next] = 0;
+  } else {
+    const maxStep = getMaxStep(nxt);
+    revealState[next] = maxStep;
+    nxt.querySelectorAll('.reveal-item').forEach(el => el.classList.add('visible'));
+  }
+
+  nxt.style.transform = direction > 0 ? 'translateX(40px)' : 'translateX(-40px)';
+  nxt.style.opacity = '0';
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      nxt.classList.add('active');
+      nxt.style.transform = '';
+      nxt.style.opacity = '';
+    });
+  });
+
+  current = next;
+  updateProgress();
+}
+
+function updateProgress() {
+  const pct = total > 1 ? (current / (total - 1)) * 100 : 0;
+  document.getElementById('progress').style.width = pct + '%';
+  document.getElementById('counter').textContent = (current + 1) + ' / ' + total;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    goForward();
+  } else if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+    e.preventDefault();
+    goBack();
+  }
+});
+
+let touchStartX = 0;
+document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', (e) => {
+  const diff = touchStartX - e.changedTouches[0].clientX;
+  if (Math.abs(diff) > 50) {
+    if (diff > 0) goForward(); else goBack();
+  }
+});
+
+updateProgress();
+</script>
+</body>
+</html>
